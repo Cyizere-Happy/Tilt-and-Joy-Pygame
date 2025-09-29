@@ -1,120 +1,225 @@
 import serial
 import pygame
+import random
+import os
+import time
 
 # -----------------------------
 # Initialize Pygame
 # -----------------------------
 pygame.init()
+pygame.mixer.init()  # for audio
 
 # -----------------------------
 # Window setup
 # -----------------------------
 WIN_WIDTH, WIN_HEIGHT = 800, 600
 win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
-pygame.display.set_caption("Joystick + MPU6050 Control")
+pygame.display.set_caption("Joystick + MPU6050 Game with Audio")
 
 # -----------------------------
 # Character setup
 # -----------------------------
 CHARACTER_SIZE = 50
 CHARACTER_SPEED = 5
+JUMP_HEIGHT = 120
+GRAVITY = 8
 x, y = WIN_WIDTH // 2, WIN_HEIGHT // 2
+y_velocity = 0
+on_ground = True
 
-# Character colors
-BODY_COLOR = (0, 150, 255)   # Blue body
+# Colors
+BODY_COLOR = (0, 150, 255)
 EYE_WHITE = (255, 255, 255)
 EYE_BLACK = (0, 0, 0)
 MOUTH_COLOR = (200, 50, 50)
+bg_color = (30, 30, 30)
+COIN_COLOR = (255, 215, 0)
 
 # -----------------------------
-# Serial setup (adjust COM port if needed)
+# Particle effect
+# -----------------------------
+particles = []
+def spawn_particles(x, y, color=(255,255,50)):
+    for _ in range(12):
+        particles.append({
+            'x': x + random.randint(-10,10),
+            'y': y + random.randint(-10,10),
+            'dx': random.uniform(-3,3),
+            'dy': random.uniform(-5,0),
+            'size': random.randint(3,6),
+            'color': color
+        })
+
+def update_particles():
+    for p in particles[:]:
+        p['x'] += p['dx']
+        p['y'] += p['dy']
+        p['dy'] += 0.3
+        p['size'] -= 0.1
+        if p['size'] <= 0:
+            particles.remove(p)
+        else:
+            pygame.draw.circle(win, p['color'], (int(p['x']), int(p['y'])), int(p['size']))
+
+# -----------------------------
+# Audio setup
+# -----------------------------
+jump_sound = pygame.mixer.Sound("jump.wav") if os.path.exists("jump.wav") else None
+winning_sound = pygame.mixer.Sound("winning.wav") if os.path.exists("winning.wav") else None
+failing_sound = pygame.mixer.Sound("failing.wav") if os.path.exists("failing.wav") else None
+collecting_sound = pygame.mixer.Sound("collect.wav") if os.path.exists("collect.wav") else None
+
+# -----------------------------
+# Serial setup
 # -----------------------------
 arduino_serial = serial.Serial('COM5', 9600, timeout=1)
+
+# -----------------------------
+# Coins setup
+# -----------------------------
+coins = []
+for _ in range(5):
+    coins.append({
+        'x': random.randint(50, WIN_WIDTH-50),
+        'y': random.randint(50, WIN_HEIGHT-50),
+        'radius': 15
+    })
+score = 0
+target_score = 50
+font = pygame.font.SysFont(None, 36)
+
+# -----------------------------
+# Timer setup
+# -----------------------------
+TOTAL_TIME = 60
+start_time = time.time()
+game_over = False
+win_game = False
 
 # -----------------------------
 # Helper: Draw character
 # -----------------------------
 def draw_character(surface, x, y):
-    # Draw body (circle)
     pygame.draw.circle(surface, BODY_COLOR, (x, y), CHARACTER_SIZE)
-
-    # Eyes
     eye_offset_x = 15
     eye_offset_y = -10
     pygame.draw.circle(surface, EYE_WHITE, (x - eye_offset_x, y + eye_offset_y), 12)
     pygame.draw.circle(surface, EYE_WHITE, (x + eye_offset_x, y + eye_offset_y), 12)
     pygame.draw.circle(surface, EYE_BLACK, (x - eye_offset_x, y + eye_offset_y), 5)
     pygame.draw.circle(surface, EYE_BLACK, (x + eye_offset_x, y + eye_offset_y), 5)
-
-    # Mouth (arc-like line)
     mouth_rect = pygame.Rect(x - 20, y + 10, 40, 20)
     pygame.draw.arc(surface, MOUTH_COLOR, mouth_rect, 3.14, 0, 3)
 
 # -----------------------------
-# Game loop setup
+# Game loop
 # -----------------------------
 clock = pygame.time.Clock()
 running = True
 
 while running:
+    current_bg = bg_color
+    elapsed_time = int(time.time() - start_time)
+    remaining_time = max(0, TOTAL_TIME - elapsed_time)
+
+    if remaining_time == 0 and score < target_score and not game_over:
+        game_over = True
+        if failing_sound:
+            failing_sound.play()
+    if score >= target_score and not win_game:
+        win_game = True
+        if winning_sound:
+            winning_sound.play()
+
     # Handle quit events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Read joystick + MPU6050 data from Arduino
-    if arduino_serial.in_waiting > 0:
-        try:
-            line = arduino_serial.readline().decode().strip()
-            print("Raw Data:", line)  # Debugging
-            data = line.split(",")
-            
-            if len(data) == 5:
-                # Unpack data
-                xValue, yValue, button, pitch, roll = data
-                xValue, yValue, button = int(xValue), int(yValue), int(button)
-                pitch, roll = float(pitch), float(roll)
+    # -----------------------------
+    # Sensor controls
+    # -----------------------------
+    if not game_over and not win_game:
+        if arduino_serial.in_waiting > 0:
+            try:
+                line = arduino_serial.readline().decode().strip()
+                data = line.split(",")
+                if len(data) == 5:
+                    joyX, joyY, button, pitch, roll = data
+                    joyX, joyY, button = int(joyX), int(joyY), int(button)
+                    pitch, roll = float(pitch), float(roll)
 
-                # --- Joystick movement ---
-                if xValue < 400:
-                    x -= CHARACTER_SPEED
-                elif xValue > 600:
-                    x += CHARACTER_SPEED
+                    # Joystick movement
+                    if joyX < 400: x -= CHARACTER_SPEED
+                    elif joyX > 600: x += CHARACTER_SPEED
+                    if joyY < 400: y -= CHARACTER_SPEED
+                    elif joyY > 600: y += CHARACTER_SPEED
 
-                if yValue < 400:
-                    y -= CHARACTER_SPEED
-                elif yValue > 600:
-                    y += CHARACTER_SPEED
+                    # MPU6050 tilt
+                    if pitch < -0.3: y -= CHARACTER_SPEED
+                    elif pitch > 0.3: y += CHARACTER_SPEED
+                    if roll > 0.3: x += CHARACTER_SPEED
+                    elif roll < -0.3: x -= CHARACTER_SPEED
 
-                # --- MPU6050 tilt movement ---
-                if pitch < 0.0:      # tilt forward
-                    y -= CHARACTER_SPEED
-                elif pitch > 0.9:    # tilt backward
-                    y += CHARACTER_SPEED
+                    # Jump
+                    if button == 0 and on_ground:
+                        y_velocity = -JUMP_HEIGHT
+                        on_ground = False
+                        spawn_particles(x, y)
+                        if jump_sound:
+                            jump_sound.play()
+            except:
+                pass
 
-                if roll > 0.6:       # tilt right
-                    x += CHARACTER_SPEED
-                elif roll < 0.0:     # tilt left
-                    x -= CHARACTER_SPEED
+    # Gravity
+    if not on_ground:
+        y += y_velocity // 10
+        y_velocity += GRAVITY
+        if y >= WIN_HEIGHT // 2:
+            y = WIN_HEIGHT // 2
+            y_velocity = 0
+            on_ground = True
 
-                # --- Button action ---
-                if button == 0:  # pressed (LOW active)
-                    print("Button pressed! (fire/jump)")
-
-        except Exception as e:
-            print("Error:", e)
-
-    # Keep character inside window bounds
+    # Keep character inside window
     x = max(CHARACTER_SIZE, min(WIN_WIDTH - CHARACTER_SIZE, x))
-    y = max(CHARACTER_SIZE, min(WIN_HEIGHT - CHARACTER_SIZE, y))
+
+    # Coin collection
+    for coin in coins[:]:
+        dist = ((x - coin['x'])**2 + (y - coin['y'])**2)**0.5
+        if dist < CHARACTER_SIZE + coin['radius']:
+            coins.remove(coin)
+            score += 10
+            spawn_particles(coin['x'], coin['y'], color=(255, 215, 0))
+            if collecting_sound:
+                collecting_sound.play()
+            coins.append({
+                'x': random.randint(50, WIN_WIDTH-50),
+                'y': random.randint(50, WIN_HEIGHT-50),
+                'radius': 15
+            })
 
     # Draw everything
-    win.fill((30, 30, 30))  # Dark background
+    win.fill(current_bg)
     draw_character(win, x, y)
-    pygame.display.flip()
+    for coin in coins:
+        pygame.draw.circle(win, COIN_COLOR, (coin['x'], coin['y']), coin['radius'])
+    update_particles()
 
-    # Control frame rate
+    # Draw score and timer
+    score_text = font.render(f"Score: {score}", True, (255,255,255))
+    timer_text = font.render(f"Time: {remaining_time}", True, (255,255,255))
+    win.blit(score_text, (10,10))
+    win.blit(timer_text, (10,50))
+
+    # Win/lose messages
+    if win_game:
+        win_text = font.render("YOU WIN!", True, (0,255,0))
+        win.blit(win_text, (WIN_WIDTH//2 - 80, WIN_HEIGHT//2 - 20))
+    elif game_over:
+        lose_text = font.render("GAME OVER!", True, (255,0,0))
+        win.blit(lose_text, (WIN_WIDTH//2 - 100, WIN_HEIGHT//2 - 20))
+
+    pygame.display.flip()
     clock.tick(30)
 
-# Quit Pygame
 pygame.quit()
