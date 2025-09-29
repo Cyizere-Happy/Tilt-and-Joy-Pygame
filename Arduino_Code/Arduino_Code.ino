@@ -13,10 +13,12 @@ void setup() {
 
   // Initialize MPU6050
   Wire.begin();
+  mpu.initialize();
   Serial.println("Initialize MPU6050");
-  while (!mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_2G)) {
+
+  if (!mpu.testConnection()) {
     Serial.println("Could not find a valid MPU6050 sensor, check wiring!");
-    delay(500);
+    while (1); // Stop execution if sensor is not connected
   }
 }
 
@@ -27,9 +29,12 @@ void loop() {
   int buttonState = digitalRead(buttonPin);
 
   // --- MPU6050 ---
-  Vector normAccel = mpu.readNormalizeAccel();
-  float pitch = normAccel.XAxis;  // forward/back tilt
-  float roll  = normAccel.YAxis;  // left/right tilt
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+
+  // Convert raw values to g's (assuming ±2g scale)
+  float pitch = ax / 16384.0; // forward/back tilt
+  float roll  = ay / 16384.0; // left/right tilt
 
   // --- Send all data in one line ---
   // Format: joyX,joyY,button,pitch,roll
