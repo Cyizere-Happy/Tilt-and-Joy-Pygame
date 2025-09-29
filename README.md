@@ -1,40 +1,38 @@
-# LitMates: Joystick + MPU6050 Game
+# LitMates: Joystick + MPU6050 Game 🎮
 
-![Game Preview GIF](preview.gif)  <!-- Replace with your GIF file -->
-
-## Team Name
-
-**LitMates**
+**Team Name:** LitMates
 
 ## Description
 
-This game lets you control a cartoon character on the screen using a **joystick** and an **MPU6050 sensor** connected to an Arduino. You can move the character by pushing the joystick or tilting the sensor, and press a button to make the character jump.
+LitMates is a fun and interactive game where you control a cartoon character on the screen using a **joystick** and an **MPU6050 sensor** connected to an Arduino. Move the character by tilting the sensor or pushing the joystick, and press a button to make the character jump.
 
-**Special features:**
+**Special Features:**
 
-* Physical input using **embedded hardware**
-* **Jump action** with background color flash
+* Physical input using embedded hardware
+* Jump action with **background color flash**
 * **Particle effects** when jumping or collecting coins
-* **Win and Lose conditions** with immediate freeze of gameplay
-* Optional **audio effects** for jumping
+* Win and Lose conditions with immediate freeze of gameplay
+* Optional **audio effects** for jumping, winning, losing, or collecting coins
 
 ---
 
 ## How to Play
 
-1. Connect your joystick + MPU6050 to Arduino.
-2. Run the Python game using `pygame` with serial communication:
+1. Connect your joystick and MPU6050 to Arduino.
+2. Run the Python game:
 
-   ```bash
-   python game.py
-   ```
-3. Controls:
+```bash
+python game.py
+```
 
-   * **Joystick / Tilt MPU6050:** Move the character
-   * **Button:** Jump
-   * **Collect coins** to increase your score
-4. **Win condition:** Reach the target score before time runs out.
-5. **Lose condition:** Time runs out before reaching the target score.
+**Controls:**
+
+* **Joystick / Tilt MPU6050:** Move the character
+* **Button:** Jump
+* **Collect coins** to increase your score
+
+**Winning Condition:** Reach the target score before time runs out.
+**Losing Condition:** Time runs out before reaching the target score.
 
 ---
 
@@ -42,9 +40,9 @@ This game lets you control a cartoon character on the screen using a **joystick*
 
 * Joystick + MPU6050 tilt movement
 * Jump with particle effect and background flash
-* Score system with coin collection
-* Win / Lose conditions with immediate freeze
-* Optional jump sound
+* Score system with **coin collection**
+* Win / Lose conditions with immediate gameplay freeze
+* Optional **jump, win, fail, and collect sounds**
 
 ---
 
@@ -53,42 +51,59 @@ This game lets you control a cartoon character on the screen using a **joystick*
 * Python 3.x
 * Pygame (`pip install pygame`)
 * Arduino with MPU6050 and joystick
-* Optional `jump.wav` sound file in the same folder
+* Optional audio files (`jump.wav`, `winning.wav`, `failing.wav`, `collect.wav`) in the game folder
 
 ---
 
 ## Serial Configuration
 
-* Adjust your Arduino COM port in the game file:
+Adjust your Arduino COM port in the Python game:
 
-  ```python
-  arduino_serial = serial.Serial('COM5', 9600, timeout=1)
-  ```
-* Arduino should send data in the following format:
+```python
+arduino_serial = serial.Serial('COM5', 9600, timeout=1)
+```
 
-  ```
-  joystickX,joystickY,button,pitch,roll
-  ```
+Arduino should send data in the following **format**:
 
-  Example:
+```
+joystickX,joystickY,button,pitch,roll
+```
 
-  ```
-  512,400,1,0.05,0.3
-  ```
+**Example:**
+
+```
+512,400,1,0.05,0.3
+```
 
 ---
 
 ## How It Works
 
-* The Python program reads **real-time sensor data** from Arduino via serial.
-* Character moves according to joystick values or MPU6050 tilt angles.
-* Jumping is triggered by the joystick button.
-* Coins spawn randomly, and collecting them increases score.
-* The game ends when the target score is reached (win) or time runs out (lose).
+1. The Python program reads real-time sensor data from Arduino via **serial communication**.
+2. Character moves according to **joystick values** or **MPU6050 tilt angles**.
+3. **Jumping** is triggered by the joystick button.
+4. **Coins spawn randomly**, and collecting them increases the score.
+5. The game ends when the target score is reached (**win**) or time runs out (**lose**).
 
 ---
 
-## Screenshots / GIF
+## Screenshots / GIFs
 
-<img width="1200" height="950" alt="image" src="https://github.com/user-attachments/assets/8ac612f6-7b41-42b8-ac70-4abdd5978156" />
+*Add screenshots or GIFs of gameplay here for better visualization.*
+
+<img width="1186" height="933" alt="image" src="https://github.com/user-attachments/assets/dd4614ea-2d89-4b76-a67e-29fc90b1070c" />
+<img width="1189" height="932" alt="image" src="https://github.com/user-attachments/assets/3a2f6dba-6a8c-47fa-89dd-6a876b591358" />
+
+
+
+---
+
+## Optional Enhancements
+
+* Add more sounds for win, fail, and coin collection.
+* Customize **character size, speed, jump height**, and **coin spawn rate**.
+* Add **levels** or **obstacles** for increased challenge.
+
+
+
 
