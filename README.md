@@ -1,35 +1,94 @@
-# Joystick-MPU6050-Game
+# LitMates: Joystick + MPU6050 Game
 
-A small Pygame project that allows you to control a character on the screen using a **joystick** and an **MPU6050 gyroscope/accelerometer** connected via Arduino.
+![Game Preview GIF](preview.gif)  <!-- Replace with your GIF file -->
+
+## Team Name
+
+**LitMates**
+
+## Description
+
+This game lets you control a cartoon character on the screen using a **joystick** and an **MPU6050 sensor** connected to an Arduino. You can move the character by pushing the joystick or tilting the sensor, and press a button to make the character jump.
+
+**Special features:**
+
+* Physical input using **embedded hardware**
+* **Jump action** with background color flash
+* **Particle effects** when jumping or collecting coins
+* **Win and Lose conditions** with immediate freeze of gameplay
+* Optional **audio effects** for jumping
+
+---
+
+## How to Play
+
+1. Connect your joystick + MPU6050 to Arduino.
+2. Run the Python game using `pygame` with serial communication:
+
+   ```bash
+   python game.py
+   ```
+3. Controls:
+
+   * **Joystick / Tilt MPU6050:** Move the character
+   * **Button:** Jump
+   * **Collect coins** to increase your score
+4. **Win condition:** Reach the target score before time runs out.
+5. **Lose condition:** Time runs out before reaching the target score.
 
 ---
 
 ## Features
 
-- Real-time character movement using joystick input.
-- Tilt-based movement using MPU6050 sensor (pitch and roll).
-- Button input handling for actions (e.g., fire or jump).
-- Boundaries to keep the character inside the window.
-- Simple, cartoonish character drawn with Pygame.
+* Joystick + MPU6050 tilt movement
+* Jump with particle effect and background flash
+* Score system with coin collection
+* Win / Lose conditions with immediate freeze
+* Optional jump sound
 
 ---
 
 ## Requirements
 
-- Python 3.x
-- [Pygame](https://www.pygame.org/news)
-- PySerial (`pip install pyserial`)
-- Arduino board with MPU6050 sensor and joystick
+* Python 3.x
+* Pygame (`pip install pygame`)
+* Arduino with MPU6050 and joystick
+* Optional `jump.wav` sound file in the same folder
 
 ---
 
-## Usage
+## Serial Configuration
 
-1. Connect your Arduino with MPU6050 and joystick.
-2. Update the COM port in `Charcter_Preview.py`:
+* Adjust your Arduino COM port in the game file:
 
-<img width="1190" height="930" alt="image" src="https://github.com/user-attachments/assets/0d1dfcae-d967-47a2-a453-f8ac9325ce5f" />
-```python
-arduino_serial = serial.Serial('COM5', 9600, timeout=1)
+  ```python
+  arduino_serial = serial.Serial('COM5', 9600, timeout=1)
+  ```
+* Arduino should send data in the following format:
 
+  ```
+  joystickX,joystickY,button,pitch,roll
+  ```
+
+  Example:
+
+  ```
+  512,400,1,0.05,0.3
+  ```
+
+---
+
+## How It Works
+
+* The Python program reads **real-time sensor data** from Arduino via serial.
+* Character moves according to joystick values or MPU6050 tilt angles.
+* Jumping is triggered by the joystick button.
+* Coins spawn randomly, and collecting them increases score.
+* The game ends when the target score is reached (win) or time runs out (lose).
+
+---
+
+## Screenshots / GIF
+
+<img width="1200" height="950" alt="image" src="https://github.com/user-attachments/assets/8ac612f6-7b41-42b8-ac70-4abdd5978156" />
 
